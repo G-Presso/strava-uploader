@@ -5,7 +5,7 @@ import uuid
 
 from dotenv import load_dotenv
 from stravalib import Client, exc
-from stravalib.util.limiter import RateLimiter, XRateLimitRule
+from stravalib.util.limiter import RateLimiter
 from requests.exceptions import ConnectionError
 import csv
 import shutil
@@ -45,7 +45,8 @@ activity_translations = {
     'mountain biking': 'ride',
     'hiking': 'hike',
     'walking': 'walk',
-    'swimming': 'swim'
+    'swimming': 'swim',
+    'downhill skiing': 'alpineski'
 }
 
 # https://stackoverflow.com/a/35904211/1106893
@@ -189,17 +190,7 @@ class StravaClientUtils:
                          'Please set STRAVA_UPLOADER_TOKEN to a valid value in the file.')
             exit(1)
 
-        rate_limiter = RateLimiter()
-        rate_limiter.rules.append(XRateLimitRule(
-            {'short': {'usageFieldIndex': 0, 'usage': 0,
-                       # 60s * 15 = 15 min
-                       'limit': 100, 'time': FIFTEEN_MINUTES,
-                       'lastExceeded': None, },
-             'long': {'usageFieldIndex': 1, 'usage': 0,
-                      # 60s * 60m * 24 = 1 day
-                      'limit': 1000, 'time': ONE_DAY,
-                      'lastExceeded': None}}))
-        client = Client(rate_limiter=rate_limiter)
+        client = Client()
         client.access_token = token
         return client
 
@@ -348,8 +339,8 @@ class RunkeeperToStravaImporter:
                 try:
                     # if there is a gpx file listed, find it and upload it
                     gpx_file = row['GPX File']
+                    raw_activity_type = str(row['Type'])
                     if ".gpx" in gpx_file:
-                        raw_activity_type = str(row['Type'])
                         activity_type = RunkeeperToStravaImporter.activity_translator(raw_activity_type)
 
                         if activity_type is not None:
